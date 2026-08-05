@@ -39,7 +39,7 @@ jobs:
             --exclude='*.crt' \
             --exclude='*.p12' \
             --exclude='*.pfx' \
-            -czf lingerzen-source.tar.gz .
+            -czf "$RUNNER_TEMP/lingerzen-source.tar.gz" .
 
       - name: Configure SSH
         env:
@@ -58,7 +58,7 @@ jobs:
           scp \
             -i ~/.ssh/tencent.pem \
             -P 22 \
-            lingerzen-source.tar.gz \
+            "$RUNNER_TEMP/lingerzen-source.tar.gz" \
             "$TENCENT_USER@$TENCENT_HOST:/tmp/lingerzen-${GITHUB_SHA}.tar.gz"
 
       - name: Build and start on Tencent Cloud
