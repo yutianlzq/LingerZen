@@ -1,5 +1,6 @@
 import { setMaxListeners } from "node:events";
 import cloudflare from "@astrojs/cloudflare";
+import node from "@astrojs/node";
 import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
@@ -60,10 +61,11 @@ const adapter = process.env.CF_WORKERS
 	? cloudflare({
 			prerenderEnvironment: "node",
 		})
-	: undefined;
+	: node({ mode: "standalone" });
 
 // https://astro.build/config
 export default defineConfig({
+	output: "server",
 	site: siteConfig.site_url,
 
 	base: "/",
@@ -106,6 +108,10 @@ export default defineConfig({
 	})(),
 
 	adapter,
+
+	server: {
+		host: true,
+	},
 
 	// 图像优化配置
 	image: {

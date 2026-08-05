@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link href="config.yml" type="text/yaml" rel="cms-config-url" />
+    <title>内容管理</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; text-align: center; }
+      .pending { max-width: 24rem; margin: 0 auto; }
+      .pending p { color: #94a3b8; margin-top: 0.75rem; line-height: 1.625; }
+      .pending a { color: #38bdf8; }
+    </style>
+  </head>
+  <body>
+    <div class="pending" id="pending">
+      <h2>👨‍💻 Decap CMS 加载中…</h2>
+      <p>CMS 管理界面正在初始化。</p>
+      <p>
+        当前采用 <strong>GitHub OAuth Proxy</strong> 方案 —— 需要先在同域名下部署
+        <a href="https://decapcms.org/docs/github-backend/">OAuth 代理</a>，完成<br>
+        <code>/api/auth</code> 和 <code>/api/callback</code> 的 OAuth 流程才能登录并提交内容。
+      </p>
+      <p style="margin-top: 0.5rem; font-size: 0.875rem;">
+        OAuth 代理未就绪时，本页仅作为 CMS 配置预览。
+      </p>
+    </div>
+    <script defer src="https://unpkg.com/decap-cms@^3.1.2/dist/decap-cms.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.CMS) {
+          document.getElementById('pending').innerHTML = '<h2>✅ CMS 已加载</h2><p>等待 GitHub 认证…</p>';
+        }
+      });
+    </script>
+  </body>
+</html>

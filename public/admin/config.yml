@@ -1,0 +1,102 @@
+backend:
+  name: github
+  repo: yutianlzq/LingerZen
+  branch: master
+  base_url: https://www.lingerzen.yu-tian.net
+  auth_endpoint: /api/auth
+
+media_folder: src/content/posts/images
+public_folder: /images
+
+collections:
+  - name: posts
+    label: 文章
+    label_singular: 文章
+    folder: src/content/posts
+    format: frontmatter
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - {label: "标题", name: title, widget: string}
+      - {label: "发布日期", name: published, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false}
+      - {label: "更新日期", name: updated, widget: datetime, required: false, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false}
+      - {label: "草稿", name: draft, widget: boolean, default: false}
+      - {label: "描述", name: description, widget: text, required: false}
+      - {label: "封面图", name: image, widget: image, required: false}
+      - {label: "标签", name: tags, widget: list, required: false}
+      - {label: "分类", name: category, widget: string, required: false}
+      - {label: "语言", name: lang, widget: string, required: false, default: "zh_CN"}
+      - {label: "置顶", name: pinned, widget: boolean, default: false}
+      - {label: "作者", name: author, widget: string, required: false}
+      - {label: "来源链接", name: sourceLink, widget: string, required: false}
+      - {label: "许可协议名称", name: licenseName, widget: string, required: false}
+      - {label: "许可协议链接", name: licenseUrl, widget: string, required: false}
+      - {label: "允许评论", name: comment, widget: boolean, default: true}
+      - {label: "加密密码", name: password, widget: string, required: false}
+      - {label: "加密提示", name: passwordHint, widget: string, required: false}
+      - {label: "正文", name: body, widget: markdown}
+
+  - name: knowledge
+    label: 知识库
+    label_singular: 知识条目
+    folder: src/content/knowledge
+    format: frontmatter
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - {label: "标题", name: title, widget: string}
+      - {label: "发布日期", name: published, widget: string}
+      - {label: "更新日期", name: updated, widget: string, required: false}
+      - {label: "主题", name: topic, widget: string, required: false}
+      - {label: "别名", name: aliases, widget: list, required: false}
+      - {label: "相关链接", name: links, widget: list, required: false}
+      - {label: "描述", name: description, widget: text, required: false}
+      - {label: "标签", name: tags, widget: list, required: false}
+      - {label: "草稿", name: draft, widget: boolean, default: false}
+      - {label: "正文", name: body, widget: markdown}
+
+  - name: data
+    label: 配置
+    editor:
+      preview: false
+    files:
+      - label: RSS 源
+        name: feeds
+        file: src/data/feeds.yaml
+        fields:
+          - label: 来源列表
+            name: sources
+            widget: list
+            fields:
+              - {label: ID, name: id, widget: string}
+              - {label: 名称, name: name, widget: string}
+              - {label: URL, name: url, widget: string}
+      - label: 友链
+        name: friends
+        file: src/data/friends.yaml
+        fields:
+          - label: 友链列表
+            name: friends
+            widget: list
+            fields:
+              - {label: "站点名称", name: title, widget: string}
+              - {label: "头像URL", name: imgurl, widget: string}
+              - {label: "描述", name: desc, widget: text}
+              - {label: "链接", name: siteurl, widget: string}
+              - {label: "标签", name: tags, widget: list}
+              - {label: "权重", name: weight, widget: number, value_type: int}
+              - {label: "启用", name: enabled, widget: boolean, default: true}
+      - label: 工具与收藏
+        name: tools
+        file: src/data/tools.yaml
+        fields:
+          - label: 工具列表
+            name: tools
+            widget: list
+            fields:
+              - {label: "名称", name: title, widget: string}
+              - {label: "URL", name: url, widget: string}
+              - {label: "描述", name: desc, widget: text}
+              - {label: "图标", name: icon, widget: string, required: false}
+              - {label: "标签", name: tags, widget: list}
+              - {label: "启用", name: enabled, widget: boolean, default: true}

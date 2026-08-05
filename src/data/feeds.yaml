@@ -1,0 +1,4 @@
+sources:
+  - id: github-blog
+    name: GitHub Blog
+    url: https://github.blog/feed/

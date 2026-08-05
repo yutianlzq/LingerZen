@@ -1,0 +1,13 @@
+tools:
+  - title: GitHub
+    url: https://github.com
+    desc: 全球最大代码托管平台
+    icon: simple-icons:github
+    tags: ["开发", "协作"]
+    enabled: true
+  - title: Vercel
+    url: https://vercel.com
+    desc: 前端部署与边缘函数平台
+    icon: simple-icons:vercel
+    tags: ["部署", "前端"]
+    enabled: true

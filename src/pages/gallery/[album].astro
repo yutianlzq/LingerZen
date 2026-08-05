@@ -15,6 +15,8 @@ if (!siteConfig.pages.gallery) {
 	return Astro.redirect("/404/");
 }
 
+export const prerender = true;
+
 export function getStaticPaths() {
 	return galleryConfig.albums.map((album) => ({
 		params: { album: album.id },

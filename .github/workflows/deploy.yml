@@ -1,60 +1,83 @@
-name: Deploy to GitHub Pages
+name: Deploy to Tencent Cloud
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
 
-# Pages 部署需要的权限
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# 确保只有一个部署任务同时运行
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: tencent-production
+  cancel-in-progress: true
+
+env:
+  TENCENT_USER: ubuntu
+  DEPLOY_ROOT: /data/LingerZen
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
+    env:
+      TENCENT_HOST: ${{ secrets.TENCENT_HOST }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.14.4
-          run_install: false
-          
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-      
-      - name: Build site
-        run: pnpm run build
 
-      - name: Create .nojekyll file
-        run: touch dist/.nojekyll
-      
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist  # Astro默认构建输出目录
+      - name: Package source
+        run: |
+          test -n "$TENCENT_HOST"
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=dist \
+            --exclude=.astro \
+            --exclude='.env*' \
+            --exclude='*.pem' \
+            --exclude='*.key' \
+            --exclude='*.crt' \
+            --exclude='*.p12' \
+            --exclude='*.pfx' \
+            -czf lingerzen-source.tar.gz .
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Configure SSH
+        env:
+          TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
+          TENCENT_KNOWN_HOSTS: ${{ secrets.TENCENT_KNOWN_HOSTS }}
+        run: |
+          test -n "$TENCENT_SSH_KEY"
+          test -n "$TENCENT_KNOWN_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/tencent.pem
+          printf '%s\n' "$TENCENT_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/tencent.pem ~/.ssh/known_hosts
+
+      - name: Upload source
+        run: |
+          scp \
+            -i ~/.ssh/tencent.pem \
+            -P 22 \
+            lingerzen-source.tar.gz \
+            "$TENCENT_USER@$TENCENT_HOST:/tmp/lingerzen-${GITHUB_SHA}.tar.gz"
+
+      - name: Build and start on Tencent Cloud
+        run: |
+          ssh \
+            -i ~/.ssh/tencent.pem \
+            -p 22 \
+            "$TENCENT_USER@$TENCENT_HOST" \
+            "sudo -n -i bash -s -- '$DEPLOY_ROOT' '$GITHUB_SHA'" <<'REMOTE'
+          set -eu
+          DEPLOY_ROOT="$1"
+          RELEASE="$2"
+          release_dir="$DEPLOY_ROOT/releases/$RELEASE"
+          mkdir -p "$release_dir"
+          tar -xzf "/tmp/lingerzen-$RELEASE.tar.gz" -C "$release_dir"
+          rm -f "/tmp/lingerzen-$RELEASE.tar.gz"
+          ln -sfn "$release_dir" "$DEPLOY_ROOT/current"
+          cd "$DEPLOY_ROOT/current"
+          docker compose -p lingerzen build
+          docker compose -p lingerzen up -d --remove-orphans
+          docker image prune -f --filter "label=com.docker.compose.project=lingerzen"
+          REMOTE

@@ -82,12 +82,41 @@ const dynamicCollection: ContentCollection<DynamicData> = defineCollection({
 	}),
 });
 
+type KnowledgeData = {
+	title: string;
+	published: string;
+	updated?: string;
+	topic: string;
+	aliases: string[];
+	links: string[];
+	description: string;
+	tags: string[];
+	draft: boolean;
+};
+
+const knowledgeCollection: ContentCollection<KnowledgeData> = defineCollection({
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/knowledge" }),
+	schema: z.object({
+		title: z.string(),
+		published: z.string(),
+		updated: z.string().optional(),
+		topic: z.string().optional().default(""),
+		aliases: z.array(z.string()).optional().default([]),
+		links: z.array(z.string()).optional().default([]),
+		description: z.string().optional().default(""),
+		tags: z.array(z.string()).optional().default([]),
+		draft: z.boolean().optional().default(false),
+	}),
+});
+
 export const collections: {
 	dynamic: typeof dynamicCollection;
+	knowledge: typeof knowledgeCollection;
 	posts: typeof postsCollection;
 	spec: typeof specCollection;
 } = {
 	dynamic: dynamicCollection,
+	knowledge: knowledgeCollection,
 	posts: postsCollection,
 	spec: specCollection,
 };

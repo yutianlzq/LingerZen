@@ -16,6 +16,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 主页
 	links.push(LinkPresets.Home);
 
+	// 热点
+	links.push(LinkPresets.Feeds);
+
 	// 文章及其子菜单
 	links.push({
 		name: "文章",
@@ -146,6 +149,11 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/dynamic/",
 		icon: "material-symbols:forum-rounded",
 		pageKey: "dynamic",
+	},
+	Feeds: {
+		name: "热点",
+		url: "/feeds/",
+		icon: "material-symbols:trending-up",
 	},
 	Archive: {
 		name: "归档",
