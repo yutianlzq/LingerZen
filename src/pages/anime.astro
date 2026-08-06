@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { Icon } from "astro-icon/components";
 import AnimeGrid from "@/components/pages/anime/AnimeGrid.svelte";
+import { getBilibiliItems, type BilibiliItem } from "@/config/animeData";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -39,19 +40,6 @@ interface TmdbItem {
 	poster_path?: string | null;
 	vote_average?: number;
 	overview?: string;
-}
-
-interface BilibiliItem {
-	media_id: number;
-	title: string;
-	cover?: string;
-	season_type?: number;
-	season_type_name?: string;
-	rating?: { score?: number };
-	evaluate?: string;
-	brief?: string;
-	season_id: number;
-	new_ep?: { index_show?: string };
 }
 
 // ============ 数据获取 ============
@@ -122,52 +110,8 @@ if (TMDB_API_KEY && TMDB_LIST_ID) {
 let bilibiliItems: BilibiliItem[] = [];
 if (BILIBILI_UID) {
 	try {
-		console.log(`[Anime] Fetching Bilibili list for UID: ${BILIBILI_UID}...`);
-		const ps = 30;
-
-		/** 获取指定类型的全部追番数据 */
-		async function fetchBilibiliByType(type: number): Promise<BilibiliItem[]> {
-			const items: BilibiliItem[] = [];
-			// 第一页，获取 total
-			const firstRes = await fetch(
-				`https://api.bilibili.com/x/space/bangumi/follow/list?type=${type}&vmid=${BILIBILI_UID}&pn=1&ps=${ps}`,
-			);
-			const firstJson = await firstRes.json();
-			if (firstJson.code !== 0 || !firstJson.data?.list?.length) return items;
-
-			items.push(...firstJson.data.list);
-			const total = firstJson.data.total || items.length;
-			const totalPages = Math.ceil(total / ps);
-
-			// 并发请求剩余页
-			if (totalPages > 1) {
-				const promises: Promise<BilibiliItem[]>[] = [];
-				for (let pn = 2; pn <= totalPages; pn++) {
-					promises.push(
-						fetch(
-							`https://api.bilibili.com/x/space/bangumi/follow/list?type=${type}&vmid=${BILIBILI_UID}&pn=${pn}&ps=${ps}`,
-						)
-							.then((r) => r.json())
-							.then((j) => j.data?.list || []),
-					);
-				}
-				const remaining = await Promise.all(promises);
-				for (const batch of remaining) {
-					items.push(...batch);
-				}
-			}
-			return items;
-		}
-
-		// 并发获取追番和追剧
-		const [animeItems, dramaItems] = await Promise.all([
-			fetchBilibiliByType(1),
-			fetchBilibiliByType(2),
-		]);
-		bilibiliItems = [...animeItems, ...dramaItems];
-		console.log(
-			`[Anime] Fetched ${bilibiliItems.length} items from Bilibili (anime: ${animeItems.length}, drama: ${dramaItems.length}).`,
-		);
+		console.log(`[Anime] Loading Bilibili list for UID: ${BILIBILI_UID}...`);
+		bilibiliItems = await getBilibiliItems(BILIBILI_UID);
 	} catch (e) {
 		console.error("[Anime] Bilibili fetch error:", e);
 	}

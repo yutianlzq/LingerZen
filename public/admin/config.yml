@@ -2,7 +2,7 @@ backend:
   name: github
   repo: yutianlzq/LingerZen
   branch: master
-  base_url: https://www.lingerzen.yu-tian.net
+  base_url: https://lingerzen.yu-tian.net
   auth_endpoint: /api/auth
 
 media_folder: src/content/posts/images
