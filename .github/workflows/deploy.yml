@@ -75,10 +75,33 @@ jobs:
           mkdir -p "$release_dir"
           tar -xzf "/tmp/lingerzen-$RELEASE.tar.gz" -C "$release_dir"
           rm -f "/tmp/lingerzen-$RELEASE.tar.gz"
-          ln -sfn "$release_dir" "$DEPLOY_ROOT/current"
+          has_non_empty_env() {
+            awk -F= -v first="$1" -v second="$2" '
+              {
+                key = $1
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", key)
+                if (key != first && key != second) next
+                value = substr($0, index($0, "=") + 1)
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                if (value ~ /^".*"$/ || value ~ /^'\''.*'\''$/) {
+                  value = substr(value, 2, length(value) - 2)
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                }
+                if (value != "") found = 1
+              }
+              END { exit found ? 0 : 1 }
+            ' "$DEPLOY_ROOT/.env"
+          }
           test -r "$DEPLOY_ROOT/.env"
-          grep -Eq '^GITHUB_CLIENT_ID=[^[:space:]].*$|^GITHUB_OAUTH_CLIENT_ID=[^[:space:]].*$' "$DEPLOY_ROOT/.env"
-          grep -Eq '^GITHUB_CLIENT_SECRET=[^[:space:]].*$|^GITHUB_OAUTH_CLIENT_SECRET=[^[:space:]].*$' "$DEPLOY_ROOT/.env"
+          if ! has_non_empty_env GITHUB_CLIENT_ID GITHUB_OAUTH_CLIENT_ID; then
+            echo "Missing GitHub OAuth client ID in $DEPLOY_ROOT/.env" >&2
+            exit 1
+          fi
+          if ! has_non_empty_env GITHUB_CLIENT_SECRET GITHUB_OAUTH_CLIENT_SECRET; then
+            echo "Missing GitHub OAuth client secret in $DEPLOY_ROOT/.env" >&2
+            exit 1
+          fi
+          ln -sfn "$release_dir" "$DEPLOY_ROOT/current"
           cd "$DEPLOY_ROOT/current"
           docker compose -p lingerzen build
           docker compose -p lingerzen up -d --remove-orphans
