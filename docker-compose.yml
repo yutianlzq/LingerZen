@@ -4,6 +4,9 @@ services:
       context: .
     image: lingerzen:latest
     restart: unless-stopped
+    env_file:
+      - path: /data/LingerZen/.env
+        required: false
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0

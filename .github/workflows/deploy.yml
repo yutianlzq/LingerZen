@@ -76,6 +76,9 @@ jobs:
           tar -xzf "/tmp/lingerzen-$RELEASE.tar.gz" -C "$release_dir"
           rm -f "/tmp/lingerzen-$RELEASE.tar.gz"
           ln -sfn "$release_dir" "$DEPLOY_ROOT/current"
+          test -r "$DEPLOY_ROOT/.env"
+          grep -Eq '^GITHUB_CLIENT_ID=[^[:space:]].*$|^GITHUB_OAUTH_CLIENT_ID=[^[:space:]].*$' "$DEPLOY_ROOT/.env"
+          grep -Eq '^GITHUB_CLIENT_SECRET=[^[:space:]].*$|^GITHUB_OAUTH_CLIENT_SECRET=[^[:space:]].*$' "$DEPLOY_ROOT/.env"
           cd "$DEPLOY_ROOT/current"
           docker compose -p lingerzen build
           docker compose -p lingerzen up -d --remove-orphans

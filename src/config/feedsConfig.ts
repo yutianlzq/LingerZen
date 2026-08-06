@@ -1,9 +1,9 @@
 import { XMLParser } from "fast-xml-parser";
 
-export const FEED_CACHE_TTL_MS = 5 * 60 * 1000;
-export const FEED_REQUEST_TIMEOUT_MS = 8 * 1000;
-export const FEED_MAX_ITEMS = 20;
-const ALLOWED_FEED_HOSTS = new Set(["github.blog"]);
+export const FEED_CACHE_TTL_MS: number = 5 * 60 * 1000;
+export const FEED_REQUEST_TIMEOUT_MS: number = 8 * 1000;
+export const FEED_MAX_ITEMS: number = 20;
+const ALLOWED_FEED_HOSTS: ReadonlySet<string> = new Set(["github.blog"]);
 
 export type FeedSource = {
 	id: string;

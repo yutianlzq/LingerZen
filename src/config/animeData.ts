@@ -1,5 +1,5 @@
-export const BILIBILI_CACHE_TTL_MS = 10 * 60 * 1000;
-export const BILIBILI_REQUEST_TIMEOUT_MS = 8 * 1000;
+export const BILIBILI_CACHE_TTL_MS: number = 10 * 60 * 1000;
+export const BILIBILI_REQUEST_TIMEOUT_MS: number = 8 * 1000;
 
 export type BilibiliItem = {
 	media_id: number;
