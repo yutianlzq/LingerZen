@@ -113,24 +113,42 @@
    git clone https://github.com/you-github-name/Firefly.git
    cd Firefly
    ```
-3. **安装依赖：**
+3. **配置本地环境：**
    ```bash
-   # 如果没有安装 pnpm，先安装
-   npm install -g pnpm
-   
-   # 安装项目依赖
+   cp .env.local.example .env.local
+   ```
+   编辑 `.env.local`，填写本地站点地址和 GitHub OAuth App 参数：
+   ```dotenv
+   PUBLIC_SITE_URL=http://localhost:4321
+   GITHUB_CLIENT_ID=你的本地 OAuth Client ID
+   GITHUB_CLIENT_SECRET=你的本地 OAuth Client Secret
+   ```
+   `.env.local` 已被 Git 忽略，不要提交或公开其中的 secret。
+
+4. **安装依赖：**
+   ```bash
    pnpm install
    ```
-
-4. **配置博客：**
-   - 编辑 `src/config/` 目录下的配置文件自定义博客设置
 
 5. **启动开发服务器：**
    ```bash
    pnpm dev
    ```
-   博客将在 `http://localhost:4321` 可用
-   
+   博客将在 `http://localhost:4321` 可用，CMS 地址为 `http://localhost:4321/admin/index.html#/`。
+
+   如果需要通过 CMS 登录，GitHub OAuth App 的回调地址必须配置为：
+   `http://localhost:4321/api/callback`
+
+6. **使用本地 Docker 环境（可选）：**
+   ```bash
+   docker compose --env-file .env.local -f docker-compose.local.yml up --build
+   ```
+   Docker 服务仅绑定到本机 `127.0.0.1:4321`。停止服务：
+   ```bash
+   docker compose -f docker-compose.local.yml down
+   ```
+
+
 ### 社区教程
 Cloudflare Workers 部署：[【不用服务器，无需备案，零成本搭建一个自己的个人博客】](https://www.bilibili.com/video/BV1hX9XBKEhm)
 

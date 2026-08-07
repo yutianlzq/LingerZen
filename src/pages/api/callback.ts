@@ -2,16 +2,25 @@ import type { APIRoute } from "astro";
 import { siteConfig } from "@/config";
 
 const STATE_COOKIE = "__Host-decap_oauth_state";
+const LOCAL_STATE_COOKIE = "decap_oauth_state";
 const TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token";
 const TOKEN_REQUEST_TIMEOUT_MS = 10 * 1000;
 const AUTH_MESSAGE_PREFIX = "authorization:github";
+
+function getStateCookieName() {
+	return new URL(siteConfig.site_url).protocol === "https:"
+		? STATE_COOKIE
+		: LOCAL_STATE_COOKIE;
+}
 
 function getClientId() {
 	return process.env.GITHUB_CLIENT_ID || process.env.GITHUB_OAUTH_CLIENT_ID;
 }
 
 function getClientSecret() {
-	return process.env.GITHUB_CLIENT_SECRET || process.env.GITHUB_OAUTH_CLIENT_SECRET;
+	return (
+		process.env.GITHUB_CLIENT_SECRET || process.env.GITHUB_OAUTH_CLIENT_SECRET
+	);
 }
 
 function serializeForScript(value: string) {
@@ -45,7 +54,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 	const clientSecret = getClientSecret();
 	const state = url.searchParams.get("state");
 	const code = url.searchParams.get("code");
-	const expectedState = cookies.get(STATE_COOKIE)?.value;
+	const expectedState = cookies.get(getStateCookieName())?.value;
 
 	if (!clientId || !clientSecret) {
 		return renderError("GitHub OAuth is unavailable");
@@ -57,7 +66,7 @@ export const GET: APIRoute = async ({ cookies, url }) => {
 		return renderError("GitHub did not return an authorization code");
 	}
 
-	cookies.delete(STATE_COOKIE, { path: "/" });
+	cookies.delete(getStateCookieName(), { path: "/" });
 
 	const controller = new AbortController();
 	const timeout = setTimeout(

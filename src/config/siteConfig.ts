@@ -11,8 +11,8 @@ export const siteConfig: SiteConfig = {
 	// 站点副标题
 	subtitle: "Demo site",
 
-	// 站点 URL
-	site_url: "https://lingerzen.yu-tian.net",
+	// 站点 URL，可通过 PUBLIC_SITE_URL 覆盖本地开发地址
+	site_url: import.meta.env?.PUBLIC_SITE_URL || "https://lingerzen.yu-tian.net",
 
 	// 站点描述
 	description:

@@ -14,13 +14,15 @@ import { collectUsedFontCssVars } from "@/utils/fontHelper";
 
 // 使用共享的工具函数收集所有需要加载的 CSS 变量名（selected + 各区域字体，去重）
 // enable=false 时返回空集，不会加载任何字体
-const allCssVars = fontConfig.enable
-	? collectUsedFontCssVars(fontConfig)
-	: new Set<string>();
+const isFontApiDisabled = process.env.DISABLE_FONT_API === "true";
+const allCssVars =
+	!isFontApiDisabled && fontConfig.enable
+		? collectUsedFontCssVars(fontConfig)
+		: new Set<string>();
 
 // 统一解析 selected 为数组（用于后续 body font-family 和 preload 判断）
 const selectedIds: string[] =
-	fontConfig.enable && fontConfig.selected
+	!isFontApiDisabled && fontConfig.enable && fontConfig.selected
 		? Array.isArray(fontConfig.selected)
 			? fontConfig.selected
 			: [fontConfig.selected]
@@ -40,19 +42,22 @@ const bodyFontFamily =
 		: SYSTEM_FONT_STACK;
 
 // 各区域字体 CSS 变量值
-const bannerTitleFontVar = fontConfig.enable
-	? fontConfig.bannerTitleFont || ""
-	: "";
-const bannerSubtitleFontVar = fontConfig.enable
-	? fontConfig.bannerSubtitleFont || ""
-	: "";
-const navbarTitleFontVar = fontConfig.enable
-	? fontConfig.navbarTitleFont || ""
-	: "";
+const bannerTitleFontVar =
+	!isFontApiDisabled && fontConfig.enable
+		? fontConfig.bannerTitleFont || ""
+		: "";
+const bannerSubtitleFontVar =
+	!isFontApiDisabled && fontConfig.enable
+		? fontConfig.bannerSubtitleFont || ""
+		: "";
+const navbarTitleFontVar =
+	!isFontApiDisabled && fontConfig.enable
+		? fontConfig.navbarTitleFont || ""
+		: "";
 ---
 
 <!-- Astro Font API: 自动下载、缓存并生成优化的 @font-face -->
-{Array.from(allCssVars).map((cssVar) => (
+{!isFontApiDisabled && Array.from(allCssVars).map((cssVar) => (
   <Font
     cssVariable={cssVar as any}
     preload={selectedFontVars.includes(cssVar)}

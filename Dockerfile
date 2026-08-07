@@ -7,7 +7,12 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+ARG PUBLIC_SITE_URL=https://lingerzen.yu-tian.net
+ARG DISABLE_FONT_API=false
 ENV NODE_ENV=production
+ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
+ENV DISABLE_FONT_API=$DISABLE_FONT_API
+RUN node scripts/generate-local-cms-config.mjs
 RUN pnpm build
 RUN pnpm prune --prod
 

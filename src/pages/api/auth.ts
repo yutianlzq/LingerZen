@@ -2,8 +2,15 @@ import type { APIRoute } from "astro";
 import { siteConfig } from "@/config";
 
 const STATE_COOKIE = "__Host-decap_oauth_state";
+const LOCAL_STATE_COOKIE = "decap_oauth_state";
 const STATE_MAX_AGE_SECONDS = 10 * 60;
 const AUTHORIZATION_ENDPOINT = "https://github.com/login/oauth/authorize";
+
+function getStateCookieName() {
+	return new URL(siteConfig.site_url).protocol === "https:"
+		? STATE_COOKIE
+		: LOCAL_STATE_COOKIE;
+}
 
 function getClientId() {
 	return process.env.GITHUB_CLIENT_ID || process.env.GITHUB_OAUTH_CLIENT_ID;
@@ -41,9 +48,9 @@ export const GET: APIRoute = ({ cookies, url }) => {
 	}
 
 	const state = crypto.randomUUID();
-	cookies.set(STATE_COOKIE, state, {
+	cookies.set(getStateCookieName(), state, {
 		httpOnly: true,
-		secure: true,
+		secure: new URL(siteConfig.site_url).protocol === "https:",
 		sameSite: "lax",
 		path: "/",
 		maxAge: STATE_MAX_AGE_SECONDS,

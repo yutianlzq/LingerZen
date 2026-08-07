@@ -4,6 +4,7 @@
   "version": "6.15.2",
   "scripts": {
     "dev": "astro dev",
+    "predev": "node scripts/generate-local-cms-config.mjs",
     "start": "node ./dist/server/entry.mjs",
     "check": "astro check",
     "build": "npx tsx scripts/generate-lqips.ts && astro build && npx tsx scripts/subset-fonts.ts && pagefind --site dist/client --output-subdir pagefind",

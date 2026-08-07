@@ -4,12 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
-    <link href="config.yml" type="text/yaml" rel="cms-config-url" />
+    <link id="cms-config" href="config.yml" type="text/yaml" rel="cms-config-url" />
     <title>内容管理</title>
+    <script>
+      if (["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname)) {
+        document.getElementById("cms-config").setAttribute("href", "config.local.yml");
+      }
+    </script>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; text-align: center; }
-      .pending { max-width: 24rem; margin: 0 auto; }
+      .pending, .pending * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { min-height: 100%; }
+      body { min-height: 100vh; background: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+      .pending { position: fixed; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 1.5rem; text-align: center; }
+      .pending > * { max-width: 24rem; }
+      body:has(#nc-root) .pending { display: none; }
+      #nc-root { min-height: 100vh; width: 100%; }
       .pending p { color: #94a3b8; margin-top: 0.75rem; line-height: 1.625; }
       .pending a { color: #38bdf8; }
     </style>

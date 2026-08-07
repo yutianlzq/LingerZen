@@ -1,0 +1,18 @@
+services:
+  firefly-local:
+    build:
+      context: .
+      args:
+        PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:4321}
+        DISABLE_FONT_API: "true"
+    image: lingerzen:local
+    restart: unless-stopped
+    env_file:
+      - path: ./.env.local
+        required: false
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4321
+    ports:
+      - "127.0.0.1:4321:4321"
