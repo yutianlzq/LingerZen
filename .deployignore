@@ -1,0 +1,16 @@
+.git/
+node_modules/
+dist/
+.astro/
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+.vercel/
+.idea/
+.claude/
+.codex*
+.obsidian/

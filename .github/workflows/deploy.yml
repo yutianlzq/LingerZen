@@ -1,4 +1,4 @@
-name: Deploy to Tencent Cloud
+name: Verify and Deploy to Tencent Cloud
 
 on:
   push:
@@ -10,42 +10,58 @@ permissions:
 
 concurrency:
   group: tencent-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   TENCENT_USER: ubuntu
   DEPLOY_ROOT: /data/LingerZen
 
 jobs:
+  verify:
+    name: Verify with Node.js 22
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Astro check
+        run: pnpm astro check
+
+      - name: Production build check
+        run: pnpm build
+
   deploy:
+    name: Deploy release to Tencent Cloud
+    needs: verify
     runs-on: ubuntu-latest
     env:
       TENCENT_HOST: ${{ secrets.TENCENT_HOST }}
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Package source
-        run: |
-          test -n "$TENCENT_HOST"
-          tar \
-            --exclude=.git \
-            --exclude=node_modules \
-            --exclude=dist \
-            --exclude=.astro \
-            --exclude='.env*' \
-            --exclude='*.pem' \
-            --exclude='*.key' \
-            --exclude='*.crt' \
-            --exclude='*.p12' \
-            --exclude='*.pfx' \
-            -czf "$RUNNER_TEMP/lingerzen-source.tar.gz" .
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configure SSH
         env:
           TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
           TENCENT_KNOWN_HOSTS: ${{ secrets.TENCENT_KNOWN_HOSTS }}
         run: |
+          set -euo pipefail
+          test -n "$TENCENT_HOST"
           test -n "$TENCENT_SSH_KEY"
           test -n "$TENCENT_KNOWN_HOSTS"
           install -d -m 700 ~/.ssh
@@ -53,57 +69,59 @@ jobs:
           printf '%s\n' "$TENCENT_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/tencent.pem ~/.ssh/known_hosts
 
-      - name: Upload source
+      - name: Prepare release on Tencent Cloud
         run: |
-          scp \
-            -i ~/.ssh/tencent.pem \
-            -P 22 \
-            "$RUNNER_TEMP/lingerzen-source.tar.gz" \
-            "$TENCENT_USER@$TENCENT_HOST:/tmp/lingerzen-${GITHUB_SHA}.tar.gz"
-
-      - name: Build and start on Tencent Cloud
-        run: |
+          set -euo pipefail
           ssh \
             -i ~/.ssh/tencent.pem \
             -p 22 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
             "$TENCENT_USER@$TENCENT_HOST" \
-            "sudo -n -i bash -s -- '$DEPLOY_ROOT' '$GITHUB_SHA'" <<'REMOTE'
-          set -eu
+            "sudo -n bash -s -- '$DEPLOY_ROOT' '$GITHUB_SHA'" <<'REMOTE'
+          set -euo pipefail
           DEPLOY_ROOT="$1"
           RELEASE="$2"
-          release_dir="$DEPLOY_ROOT/releases/$RELEASE"
-          mkdir -p "$release_dir"
-          tar -xzf "/tmp/lingerzen-$RELEASE.tar.gz" -C "$release_dir"
-          rm -f "/tmp/lingerzen-$RELEASE.tar.gz"
-          has_non_empty_env() {
-            awk -F= -v first="$1" -v second="$2" '
-              {
-                key = $1
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", key)
-                if (key != first && key != second) next
-                value = substr($0, index($0, "=") + 1)
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-                if (value ~ /^".*"$/ || value ~ /^'\''.*'\''$/) {
-                  value = substr(value, 2, length(value) - 2)
-                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-                }
-                if (value != "") found = 1
-              }
-              END { exit found ? 0 : 1 }
-            ' "$DEPLOY_ROOT/.env"
-          }
+          RELEASES_DIR="$DEPLOY_ROOT/releases"
+          RELEASE_DIR="$RELEASES_DIR/$RELEASE"
+
+          case "$RELEASE" in
+            ''|*[!0-9a-f]*)
+              echo "Invalid release SHA" >&2
+              exit 1
+              ;;
+          esac
+
           test -r "$DEPLOY_ROOT/.env"
-          if ! has_non_empty_env GITHUB_CLIENT_ID GITHUB_OAUTH_CLIENT_ID; then
-            echo "Missing GitHub OAuth client ID in $DEPLOY_ROOT/.env" >&2
-            exit 1
+          mkdir -p "$RELEASES_DIR"
+          rm -rf -- "$RELEASE_DIR"
+          mkdir -p "$RELEASE_DIR"
+
+          if [[ -e "$DEPLOY_ROOT/current" ]]; then
+            test -L "$DEPLOY_ROOT/current"
+            cp -al "$DEPLOY_ROOT/current/." "$RELEASE_DIR/"
           fi
-          if ! has_non_empty_env GITHUB_CLIENT_SECRET GITHUB_OAUTH_CLIENT_SECRET; then
-            echo "Missing GitHub OAuth client secret in $DEPLOY_ROOT/.env" >&2
-            exit 1
-          fi
-          ln -sfn "$release_dir" "$DEPLOY_ROOT/current"
-          cd "$DEPLOY_ROOT/current"
-          docker compose -p lingerzen build
-          docker compose -p lingerzen up -d --remove-orphans
-          docker image prune -f --filter "label=com.docker.compose.project=lingerzen"
           REMOTE
+
+      - name: Incremental sync source
+        run: |
+          set -euo pipefail
+          rsync -azc \
+            --delete-delay \
+            --stats \
+            --exclude-from=.deployignore \
+            --rsync-path="sudo -n rsync" \
+            -e "ssh -i ~/.ssh/tencent.pem -p 22 -o ServerAliveInterval=30 -o ServerAliveCountMax=3" \
+            ./ \
+            "$TENCENT_USER@$TENCENT_HOST:$DEPLOY_ROOT/releases/$GITHUB_SHA/"
+
+      - name: Build, activate and verify release
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/tencent.pem \
+            -p 22 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            "$TENCENT_USER@$TENCENT_HOST" \
+            "sudo -n bash -s -- '$DEPLOY_ROOT' '$GITHUB_SHA'" < scripts/deploy-release.sh

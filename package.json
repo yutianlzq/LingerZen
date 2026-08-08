@@ -7,7 +7,7 @@
     "predev": "node scripts/generate-local-cms-config.mjs",
     "start": "node ./dist/server/entry.mjs",
     "check": "astro check",
-    "build": "npx tsx scripts/generate-lqips.ts && astro build && npx tsx scripts/subset-fonts.ts && pagefind --site dist/client --output-subdir pagefind",
+    "build": "pnpm exec tsx scripts/generate-lqips.ts && astro build && pnpm exec tsx scripts/subset-fonts.ts && pagefind --site dist/client --output-subdir pagefind",
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit --isolatedDeclarations",
@@ -17,7 +17,7 @@
     "format": "biome format --write ./src",
     "lint": "biome check --write ./src",
     "preinstall": "npx only-allow pnpm",
-    "lqips": "npx tsx scripts/generate-lqips.ts"
+    "lqips": "pnpm exec tsx scripts/generate-lqips.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
