@@ -34,22 +34,30 @@ export const fontsList: FontDefinition[] = [
 		options: {
 			variants: [
 				{
-					src: ["./public/assets/fonts/zen-maru-gothic-japanese-300-normal.woff2"],
+					src: [
+						"./public/assets/fonts/zen-maru-gothic-japanese-300-normal.woff2",
+					],
 					weight: "300",
 					style: "normal",
 				},
 				{
-					src: ["./public/assets/fonts/zen-maru-gothic-japanese-400-normal.woff2"],
+					src: [
+						"./public/assets/fonts/zen-maru-gothic-japanese-400-normal.woff2",
+					],
 					weight: "400",
 					style: "normal",
 				},
 				{
-					src: ["./public/assets/fonts/zen-maru-gothic-japanese-500-normal.woff2"],
+					src: [
+						"./public/assets/fonts/zen-maru-gothic-japanese-500-normal.woff2",
+					],
 					weight: "500",
 					style: "normal",
 				},
 				{
-					src: ["./public/assets/fonts/zen-maru-gothic-japanese-700-normal.woff2"],
+					src: [
+						"./public/assets/fonts/zen-maru-gothic-japanese-700-normal.woff2",
+					],
 					weight: "700",
 					style: "normal",
 				},
