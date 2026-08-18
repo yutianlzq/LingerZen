@@ -1,0 +1,91 @@
+---
+import { Icon } from "astro-icon/components";
+import TrendChart from "@/components/pages/github-trending/TrendChart.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getRepositoryDetail } from "@/lib/github-trending/query-service";
+import { getTrendingRuntime } from "@/lib/github-trending/runtime";
+import { GITHUB_TRENDING_HISTORY_WINDOWS } from "@/lib/github-trending/types";
+import { url } from "@/utils/url-utils";
+
+const owner = Astro.params.owner ?? "";
+const repo = Astro.params.repo ?? "";
+const requestedWindow = Number(Astro.url.searchParams.get("window") ?? 90);
+const windowDays = GITHUB_TRENDING_HISTORY_WINDOWS.includes(
+	requestedWindow as (typeof GITHUB_TRENDING_HISTORY_WINDOWS)[number],
+)
+	? requestedWindow
+	: 90;
+const runtime = await getTrendingRuntime();
+const detail = runtime.database
+	? getRepositoryDetail(runtime.database, owner, repo, windowDays)
+	: null;
+const isMissing = runtime.status === "ready" && !detail;
+if (isMissing) Astro.response.status = 404;
+const numberFormatter = new Intl.NumberFormat("zh-CN");
+const githubUrl = detail
+	? `https://github.com/${encodeURIComponent(detail.repository.ownerLogin)}/${encodeURIComponent(detail.repository.name)}`
+	: "";
+
+function rangeUrl(days: number): string {
+	return url(
+		`/hotspots/github/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/?window=${days}`,
+	);
+}
+---
+
+<MainGridLayout title={detail ? `${detail.repository.fullName} - GitHub Trending` : "GitHub Trending"} description={detail?.repository.description ?? "GitHub 仓库历史趋势"}>
+	<section class="flex w-full rounded-(--radius-large) overflow-hidden relative">
+		<div class="card-base z-10 px-4 py-5 sm:px-6 md:px-9 md:py-8 relative w-full">
+			<a href={url("/hotspots/github/")} class="inline-flex items-center gap-1 text-sm text-(--primary) hover:underline"><Icon is:inline name="material-symbols:arrow-back-rounded" /> 返回榜单</a>
+
+			{isMissing ? (
+				<div class="mt-6 rounded-xl border border-dashed border-(--line-divider) px-5 py-14 text-center">
+					<Icon is:inline name="material-symbols:search-off-rounded" class="text-4xl text-neutral-400" />
+					<h1 class="mt-3 text-xl font-semibold text-neutral-800 dark:text-neutral-200">没有找到这个仓库</h1>
+					<p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">它可能尚未进入本站候选池，或当前已不可用。</p>
+				</div>
+			) : runtime.status !== "ready" || !detail ? (
+				<div class="mt-6 rounded-xl border border-dashed border-(--line-divider) px-5 py-14 text-center">
+					<Icon is:inline name="material-symbols:database-off-outline" class="text-4xl text-neutral-400" />
+					<h1 class="mt-3 text-xl font-semibold text-neutral-800 dark:text-neutral-200">仓库历史暂时不可用</h1>
+				</div>
+			) : (
+				<>
+					<header class="mt-5">
+						<div class="flex flex-wrap items-center gap-3">
+							{detail.repository.ownerAvatarUrl && <img src={detail.repository.ownerAvatarUrl} alt="" width="48" height="48" loading="lazy" referrerpolicy="no-referrer" class="h-12 w-12 rounded-xl bg-black/5 dark:bg-white/10" />}
+							<div class="min-w-0">
+								<h1 class="text-2xl sm:text-3xl font-bold break-all text-neutral-900 dark:text-neutral-100">{detail.repository.fullName}</h1>
+								<div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
+									{detail.repository.language && <span>{detail.repository.language}</span>}
+									{detail.repository.licenseSpdxId && <span>· {detail.repository.licenseSpdxId}</span>}
+									<span>· 跟踪于 {detail.repository.firstSeenAt} — {detail.repository.lastSeenAt}</span>
+								</div>
+							</div>
+						</div>
+						{detail.repository.description && <p class="mt-4 leading-7 text-neutral-600 dark:text-neutral-400">{detail.repository.description}</p>}
+						<div class="mt-4 flex flex-wrap gap-2">
+							{detail.repository.topics.map((topic) => <span class="rounded-full px-2.5 py-1 text-xs bg-(--btn-regular-bg) text-neutral-600 dark:text-neutral-300">{topic}</span>)}
+						</div>
+						<div class="mt-5 flex flex-wrap gap-2">
+							{detail.repository.homepageUrl && <a href={detail.repository.homepageUrl} target="_blank" rel="noopener noreferrer" class="btn-regular px-3 py-2 text-sm inline-flex items-center gap-1.5">项目主页 <Icon is:inline name="material-symbols:arrow-outward-rounded" /></a>}
+							<a href={githubUrl} target="_blank" rel="noopener noreferrer" class="btn-regular px-3 py-2 text-sm inline-flex items-center gap-1.5"><Icon is:inline name="fa7-brands:github" /> GitHub</a>
+						</div>
+					</header>
+
+					<div class="mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
+						<div class="rounded-xl border border-(--line-divider) p-4"><span class="text-sm text-neutral-500 dark:text-neutral-400">Star</span><strong class="mt-1 block text-2xl text-neutral-900 dark:text-neutral-100">{numberFormatter.format(detail.repository.stars)}</strong></div>
+						<div class="rounded-xl border border-(--line-divider) p-4"><span class="text-sm text-neutral-500 dark:text-neutral-400">Fork</span><strong class="mt-1 block text-2xl text-neutral-900 dark:text-neutral-100">{numberFormatter.format(detail.repository.forks)}</strong></div>
+						<div class="rounded-xl border border-(--line-divider) p-4"><span class="text-sm text-neutral-500 dark:text-neutral-400">Open Issues</span><strong class="mt-1 block text-2xl text-neutral-900 dark:text-neutral-100">{numberFormatter.format(detail.repository.openIssues)}</strong></div>
+						<div class="rounded-xl border border-(--line-divider) p-4"><span class="text-sm text-neutral-500 dark:text-neutral-400">最近推送</span><strong class="mt-1 block text-base text-neutral-900 dark:text-neutral-100">{detail.repository.pushedAt?.slice(0, 10) ?? "未知"}</strong></div>
+					</div>
+
+					<nav class="mt-7 flex items-center gap-2" aria-label="趋势时间范围">
+						{GITHUB_TRENDING_HISTORY_WINDOWS.map((days) => <a href={rangeUrl(days)} aria-current={windowDays === days ? "page" : undefined} class:list={["rounded-xl px-3 py-2 text-sm font-semibold", windowDays === days ? "bg-(--primary) text-white dark:text-black/70" : "btn-regular"]}>{days} 天</a>)}
+					</nav>
+					<div class="mt-4"><TrendChart points={detail.history} /></div>
+				</>
+			)}
+		</div>
+	</section>
+</MainGridLayout>

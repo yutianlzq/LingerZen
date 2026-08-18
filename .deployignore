@@ -2,6 +2,7 @@
 node_modules/
 dist/
 .astro/
+data/github-trending/
 .env
 .env.*
 *.pem

@@ -1,0 +1,253 @@
+---
+import type { TrendPoint } from "@/lib/github-trending/query-service";
+
+interface Props {
+	points: TrendPoint[];
+}
+
+const { points } = Astro.props;
+const width = 760;
+const plotHeight = 150;
+const left = 64;
+const right = 24;
+const top = 24;
+const bottom = 30;
+const innerWidth = width - left - right;
+const innerHeight = plotHeight - top - bottom;
+const numberFormatter = new Intl.NumberFormat("zh-CN");
+
+function extent(values: number[]): { min: number; max: number } {
+	const min = Math.min(...values);
+	const max = Math.max(...values);
+	if (min === max) return { min: Math.max(0, min - 1), max: max + 1 };
+	const padding = Math.max(1, Math.ceil((max - min) * 0.08));
+	return { min: Math.max(0, min - padding), max: max + padding };
+}
+
+function yPosition(value: number, range: { min: number; max: number }): number {
+	return (
+		top +
+		innerHeight -
+		((value - range.min) / (range.max - range.min)) * innerHeight
+	);
+}
+
+function buildSeries(
+	values: number[],
+	range: { min: number; max: number },
+): string {
+	return values
+		.map((value, index) => {
+			const x =
+				left +
+				(points.length <= 1
+					? innerWidth / 2
+					: (index / (points.length - 1)) * innerWidth);
+			return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${yPosition(value, range).toFixed(2)}`;
+		})
+		.join(" ");
+}
+
+const starRange =
+	points.length > 0
+		? extent(points.map((point) => point.stars))
+		: { min: 0, max: 1 };
+const forkRange =
+	points.length > 0
+		? extent(points.map((point) => point.forks))
+		: { min: 0, max: 1 };
+const starPath = buildSeries(
+	points.map((point) => point.stars),
+	starRange,
+);
+const forkPath = buildSeries(
+	points.map((point) => point.forks),
+	forkRange,
+);
+const firstDate = points[0]?.date ?? "";
+const lastDate = points.at(-1)?.date ?? "";
+const chartId = `trend-chart-${firstDate}-${lastDate}`.replace(
+	/[^a-zA-Z0-9-]/g,
+	"-",
+);
+---
+
+<figure class="trend-viz rounded-(--radius-large) border border-(--line-divider) p-4 sm:p-5" data-trend-chart={chartId}>
+	<figcaption>
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div>
+				<h2 class="text-xl font-bold text-neutral-900 dark:text-neutral-100">Star 与 Fork 历史</h2>
+				<p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">两项指标使用独立小图与各自单一 Y 轴，避免尺度差异造成误读。</p>
+			</div>
+			<div class="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-300" aria-label="图例">
+				<span class="inline-flex items-center gap-2"><span class="legend-line star-line"></span>Star</span>
+				<span class="inline-flex items-center gap-2"><span class="legend-line fork-line"></span>Fork</span>
+			</div>
+		</div>
+	</figcaption>
+
+	{points.length < 2 ? (
+		<div class="mt-5 rounded-xl border border-dashed border-(--line-divider) py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">
+			至少积累两天数据后才会显示趋势图。
+		</div>
+	) : (
+		<>
+			<div class="chart-frame mt-5" data-chart-frame tabindex="0" aria-label={`从 ${firstDate} 到 ${lastDate} 的 Star 与 Fork 历史趋势。使用左右方向键查看各日期。`}>
+				<div class="chart-panel" data-series-panel="stars">
+					<div class="panel-label">Star</div>
+					<svg viewBox={`0 0 ${width} ${plotHeight}`} role="img" aria-label="Star 历史折线图">
+						{[0, 0.5, 1].map((ratio) => {
+							const y = top + ratio * innerHeight;
+							const value = Math.round(starRange.max - ratio * (starRange.max - starRange.min));
+							return <g><line class="grid-line" x1={left} x2={width - right} y1={y} y2={y} /><text class="axis-label" x={left - 10} y={y + 4} text-anchor="end">{numberFormatter.format(value)}</text></g>;
+						})}
+						<path class="series-path star-path" d={starPath} />
+						<circle class="end-dot star-dot" cx={width - right} cy={yPosition(points.at(-1)?.stars ?? 0, starRange)} r="4" />
+						<line class="crosshair" data-crosshair x1={left} x2={left} y1={top} y2={top + innerHeight} />
+					</svg>
+				</div>
+				<div class="chart-panel" data-series-panel="forks">
+					<div class="panel-label">Fork</div>
+					<svg viewBox={`0 0 ${width} ${plotHeight}`} role="img" aria-label="Fork 历史折线图">
+						{[0, 0.5, 1].map((ratio) => {
+							const y = top + ratio * innerHeight;
+							const value = Math.round(forkRange.max - ratio * (forkRange.max - forkRange.min));
+							return <g><line class="grid-line" x1={left} x2={width - right} y1={y} y2={y} /><text class="axis-label" x={left - 10} y={y + 4} text-anchor="end">{numberFormatter.format(value)}</text></g>;
+						})}
+						<path class="series-path fork-path" d={forkPath} />
+						<circle class="end-dot fork-dot" cx={width - right} cy={yPosition(points.at(-1)?.forks ?? 0, forkRange)} r="4" />
+						<line class="crosshair" data-crosshair x1={left} x2={left} y1={top} y2={top + innerHeight} />
+						<text class="axis-label" x={left} y={plotHeight - 7}>{firstDate}</text>
+						<text class="axis-label" x={width - right} y={plotHeight - 7} text-anchor="end">{lastDate}</text>
+					</svg>
+				</div>
+				<div class="chart-hit-layer" data-hit-layer aria-hidden="true"></div>
+				<div class="chart-tooltip" data-tooltip role="status" aria-live="polite" aria-atomic="true" hidden>
+					<strong data-tooltip-date></strong>
+					<span><i class="tooltip-key star-line"></i><b data-tooltip-stars></b><small>Star</small></span>
+					<span><i class="tooltip-key fork-line"></i><b data-tooltip-forks></b><small>Fork</small></span>
+				</div>
+			</div>
+
+			<details class="mt-4">
+				<summary class="cursor-pointer text-sm font-medium text-(--primary)">查看数据表</summary>
+				<div class="mt-3 max-h-80 overflow-auto rounded-xl border border-(--line-divider)">
+					<table class="w-full text-sm tabular-nums">
+						<thead class="sticky top-0 bg-(--card-bg)"><tr><th scope="col">日期</th><th scope="col">Star</th><th scope="col">Fork</th></tr></thead>
+						<tbody>{points.map((point) => <tr><th scope="row">{point.date}</th><td>{numberFormatter.format(point.stars)}</td><td>{numberFormatter.format(point.forks)}</td></tr>)}</tbody>
+					</table>
+				</div>
+			</details>
+		</>
+	)}
+</figure>
+
+<style>
+	.trend-viz {
+		--viz-surface: #fcfcfb;
+		--viz-grid: #e1e0d9;
+		--viz-muted: #6f6d68;
+		--series-stars: #2a78d6;
+		--series-forks: #eb6834;
+		background: var(--viz-surface);
+	}
+	:global(:root[data-theme="dark"]) .trend-viz {
+		--viz-surface: #1a1a19;
+		--viz-grid: #2c2c2a;
+		--viz-muted: #a6a49d;
+		--series-stars: #3987e5;
+		--series-forks: #d95926;
+	}
+	.legend-line, .tooltip-key { display: inline-block; width: 1.5rem; height: 2px; border-radius: 999px; }
+	.star-line { background: var(--series-stars); }
+	.fork-line { background: var(--series-forks); }
+	.chart-frame { position: relative; outline: none; }
+	.chart-frame:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent); border-radius: 0.75rem; }
+	.chart-panel { position: relative; }
+	.chart-panel + .chart-panel { margin-top: 0.75rem; }
+	.panel-label { position: absolute; top: 0; left: 0; font-size: 0.75rem; font-weight: 700; color: var(--viz-muted); }
+	svg { display: block; width: 100%; overflow: visible; }
+	.grid-line { stroke: var(--viz-grid); stroke-width: 1; vector-effect: non-scaling-stroke; }
+	.axis-label { fill: var(--viz-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+	.series-path { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+	.star-path { stroke: var(--series-stars); }
+	.fork-path { stroke: var(--series-forks); }
+	.end-dot { stroke: var(--viz-surface); stroke-width: 2; vector-effect: non-scaling-stroke; }
+	.star-dot { fill: var(--series-stars); }
+	.fork-dot { fill: var(--series-forks); }
+	.crosshair { stroke: var(--viz-muted); stroke-width: 1; opacity: 0; vector-effect: non-scaling-stroke; }
+	.chart-frame[data-active="true"] .crosshair { opacity: 0.75; }
+	.chart-hit-layer { position: absolute; inset: 0; cursor: crosshair; touch-action: pan-y; }
+	.chart-tooltip { position: absolute; z-index: 10; min-width: 9rem; padding: 0.65rem 0.75rem; border-radius: 0.75rem; background: var(--viz-surface); border: 1px solid var(--line-divider); box-shadow: 0 8px 30px rgba(0,0,0,0.14); pointer-events: none; color: var(--text-primary); }
+	.chart-tooltip > strong { display: block; margin-bottom: 0.4rem; font-size: 0.75rem; color: var(--viz-muted); }
+	.chart-tooltip > span { display: grid; grid-template-columns: 1.5rem auto 1fr; align-items: center; gap: 0.4rem; }
+	.chart-tooltip b { font-variant-numeric: tabular-nums; }
+	.chart-tooltip small { color: var(--viz-muted); }
+	th, td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--line-divider); text-align: right; }
+	th:first-child { text-align: left; }
+	@media (forced-colors: active) {
+		.series-path, .end-dot { forced-color-adjust: auto; }
+		.star-path { stroke-dasharray: none; }
+		.fork-path { stroke-dasharray: 5 3; }
+	}
+</style>
+
+<script is:inline define:vars={{ chartId, points: JSON.stringify(points), left, right, width }}>
+	function initTrendChart() {
+		const root = document.querySelector(`[data-trend-chart="${chartId}"]`);
+		if (!root || root.getAttribute("data-initialized") === "true") return;
+		root.setAttribute("data-initialized", "true");
+		const frame = root.querySelector("[data-chart-frame]");
+		const hitLayer = root.querySelector("[data-hit-layer]");
+		const tooltip = root.querySelector("[data-tooltip]");
+		const crosshairs = root.querySelectorAll("[data-crosshair]");
+		const data = JSON.parse(points);
+		if (!(frame instanceof HTMLElement) || !(hitLayer instanceof HTMLElement) || !(tooltip instanceof HTMLElement) || data.length < 2) return;
+		let activeIndex = data.length - 1;
+		const formatter = new Intl.NumberFormat("zh-CN");
+
+		function render(index, clientX) {
+			activeIndex = Math.max(0, Math.min(data.length - 1, index));
+			const point = data[activeIndex];
+			const ratio = activeIndex / (data.length - 1);
+			const svgX = left + ratio * (width - left - right);
+			for (const crosshair of crosshairs) {
+				crosshair.setAttribute("x1", String(svgX));
+				crosshair.setAttribute("x2", String(svgX));
+			}
+			frame.setAttribute("data-active", "true");
+			tooltip.hidden = false;
+			tooltip.querySelector("[data-tooltip-date]").textContent = point.date;
+			tooltip.querySelector("[data-tooltip-stars]").textContent = formatter.format(point.stars);
+			tooltip.querySelector("[data-tooltip-forks]").textContent = formatter.format(point.forks);
+			const frameRect = frame.getBoundingClientRect();
+			const x = clientX ?? frameRect.left + ratio * frameRect.width;
+			const tooltipWidth = tooltip.offsetWidth || 144;
+			const maxLeft = Math.max(0, frameRect.width - tooltipWidth);
+			tooltip.style.left = `${Math.max(0, Math.min(maxLeft, x - frameRect.left + 12))}px`;
+			tooltip.style.top = "2.25rem";
+		}
+		function move(event) {
+			const rect = hitLayer.getBoundingClientRect();
+			const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+			render(Math.round(ratio * (data.length - 1)), event.clientX);
+		}
+		hitLayer.addEventListener("pointermove", move);
+		hitLayer.addEventListener("pointerdown", move);
+		hitLayer.addEventListener("pointerleave", () => {
+			frame.removeAttribute("data-active");
+			tooltip.hidden = true;
+		});
+		frame.addEventListener("focus", () => render(activeIndex));
+		frame.addEventListener("blur", () => {
+			frame.removeAttribute("data-active");
+			tooltip.hidden = true;
+		});
+		frame.addEventListener("keydown", (event) => {
+			if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+			event.preventDefault();
+			render(activeIndex + (event.key === "ArrowRight" ? 1 : -1));
+		});
+	}
+	initTrendChart();
+</script>

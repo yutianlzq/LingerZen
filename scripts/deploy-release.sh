@@ -7,6 +7,7 @@ readonly RELEASE="${2:?release SHA is required}"
 readonly RELEASES_DIR="$DEPLOY_ROOT/releases"
 readonly RELEASE_DIR="$RELEASES_DIR/$RELEASE"
 readonly CURRENT_LINK="$DEPLOY_ROOT/current"
+readonly TRENDING_DATA_DIR="$DEPLOY_ROOT/data/github-trending"
 readonly PROJECT_NAME="lingerzen"
 
 if [[ ! "$RELEASE" =~ ^[0-9a-f]{40}$ ]]; then
@@ -20,6 +21,9 @@ if [[ ! -r "$DEPLOY_ROOT/.env" || ! -d "$RELEASE_DIR" ]]; then
 	echo "Production environment or release directory is unavailable" >&2
 	exit 1
 fi
+
+mkdir -p -- "$TRENDING_DATA_DIR"
+chmod 750 -- "$DEPLOY_ROOT/data" "$TRENDING_DATA_DIR"
 
 previous_release=""
 if [[ -L "$CURRENT_LINK" ]]; then

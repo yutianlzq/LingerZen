@@ -13,6 +13,9 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 4321
+      GITHUB_TRENDING_DB_PATH: /app/data/github-trending/trending.sqlite
+    volumes:
+      - /data/LingerZen/data/github-trending:/app/data/github-trending
     ports:
       - "0.0.0.0:4321:4321"
     healthcheck:
