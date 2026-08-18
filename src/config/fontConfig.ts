@@ -30,28 +30,86 @@ export const fontsList: FontDefinition[] = [
 	{
 		name: "Zen Maru Gothic",
 		cssVariable: "--font-zen-maru-gothic",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [
+				{
+					src: ["./public/assets/fonts/zen-maru-gothic-japanese-300-normal.woff2"],
+					weight: "300",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/zen-maru-gothic-japanese-400-normal.woff2"],
+					weight: "400",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/zen-maru-gothic-japanese-500-normal.woff2"],
+					weight: "500",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/zen-maru-gothic-japanese-700-normal.woff2"],
+					weight: "700",
+					style: "normal",
+				},
+			],
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "Inter",
 		cssVariable: "--font-inter",
-		provider: "fontsource",
-		weights: ["300", "400", "500", "600", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [
+				{
+					src: ["./public/assets/fonts/inter-latin-300-normal.woff2"],
+					weight: "300",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/inter-latin-400-normal.woff2"],
+					weight: "400",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/inter-latin-500-normal.woff2"],
+					weight: "500",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/inter-latin-600-normal.woff2"],
+					weight: "600",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/inter-latin-700-normal.woff2"],
+					weight: "700",
+					style: "normal",
+				},
+			],
+		},
 		fallbacks: ["sans-serif"],
 	},
 	{
 		name: "JetBrains Mono",
 		cssVariable: "--font-jetbrains-mono",
-		provider: "fontsource",
-		weights: ["400", "700"],
-		styles: ["normal"],
-		subsets: ["latin", "cyrillic"],
+		provider: "local",
+		options: {
+			variants: [
+				{
+					src: ["./public/assets/fonts/jetbrains-mono-latin-400-normal.woff2"],
+					weight: "400",
+					style: "normal",
+				},
+				{
+					src: ["./public/assets/fonts/jetbrains-mono-latin-700-normal.woff2"],
+					weight: "700",
+					style: "normal",
+				},
+			],
+		},
 		fallbacks: [
 			"ui-monospace",
 			"SFMono-Regular",
@@ -107,6 +165,15 @@ export const fontConfig: FontSelectionConfig = {
 	subsetFonts: {
 		"--font-greatvibes": {
 			// 额外包含的字符
+			extraChars: "",
+		},
+		"--font-zen-maru-gothic": {
+			extraChars: "",
+		},
+		"--font-inter": {
+			extraChars: "",
+		},
+		"--font-jetbrains-mono": {
 			extraChars: "",
 		},
 	},
