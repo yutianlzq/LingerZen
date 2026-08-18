@@ -8,7 +8,7 @@ image: api
 slug: katex-math-example
 ---
 
-本文展示了 [Firefly](https://github.com/CuteLeaf/Firefly) 主题对 KaTeX 数学公式的渲染支持。
+本文展示了 [Firefly](https://github.com/yutianlzq/LingerZen) 主题对 KaTeX 数学公式的渲染支持。
 
 ## 行内公式 (Inline)
 

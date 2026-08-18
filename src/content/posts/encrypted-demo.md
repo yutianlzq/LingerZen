@@ -28,7 +28,7 @@ slug: encrypted-demo
 
 ## GitHub 仓库卡片
 
-::github{repo="CuteLeaf/Firefly"}
+::github{repo="yutianlzq/LingerZen"}
 
 ## 提示框
 

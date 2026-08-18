@@ -242,4 +242,4 @@ Firefly 的布局系统给予了您更大的自由度，您都可以通过简单
 - 📚 [侧边栏配置文档](https://docs-firefly.cuteleaf.cn/config/sidebarConfig-usage/)
 - 📚 [站点配置文档](https://docs-firefly.cuteleaf.cn/config/siteConfig-usage/)
 - 🏠 [Firefly 官方文档](https://docs-firefly.cuteleaf.cn/)
-- ⭐ [Firefly GitHub](https://github.com/CuteLeaf/Firefly)
+- ⭐ [Firefly GitHub](https://github.com/yutianlzq/LingerZen)
