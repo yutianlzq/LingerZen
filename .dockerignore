@@ -8,6 +8,7 @@ npm-debug.log*
 pnpm-debug.log*
 cache/
 package/
+data/github-trending/
 Firefly-docs/
 .vercel
 .idea/

@@ -2,6 +2,9 @@
   "name": "firefly",
   "type": "module",
   "version": "6.15.2",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "dev": "astro dev",
     "predev": "node scripts/generate-local-cms-config.mjs",
@@ -11,6 +14,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "type-check": "tsc --noEmit --isolatedDeclarations",
+    "test": "node --import tsx --test tests/github-trending/*.test.ts",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage --test-coverage-include=src/lib/github-trending/*.ts --test-coverage-lines=80 --test-coverage-functions=80 tests/github-trending/*.test.ts",
     "new-dynamic": "tsx scripts/new-dynamic.js",
     "new-d": "tsx scripts/new-dynamic.js",
     "new-post": "node scripts/new-post.js",
@@ -101,5 +106,10 @@
     "rehype-callouts": "^2.2.0",
     "subset-font": "^2.5.0"
   },
-  "packageManager": "pnpm@9.14.4"
+  "packageManager": "pnpm@9.14.4",
+  "pnpm": {
+    "supportedArchitectures": {
+      "cpu": ["current", "wasm32"]
+    }
+  }
 }

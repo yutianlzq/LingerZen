@@ -1,0 +1,155 @@
+---
+import { Icon } from "astro-icon/components";
+import RepositoryCard from "@/components/pages/github-trending/RepositoryCard.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import {
+	CATEGORY_LABELS,
+	getTrendingPage,
+} from "@/lib/github-trending/query-service";
+import { getTrendingRuntime } from "@/lib/github-trending/runtime";
+import { GITHUB_TRENDING_CATEGORIES } from "@/lib/github-trending/types";
+import { url } from "@/utils/url-utils";
+
+const runtime = await getTrendingRuntime();
+const pageData = runtime.database
+	? getTrendingPage(runtime.database, Astro.url.searchParams)
+	: null;
+const isGrowthCategory = pageData?.query.category.startsWith("star_") ?? false;
+
+function buildPageUrl(
+	overrides: Record<string, string | number | null>,
+): string {
+	const params = new URLSearchParams(Astro.url.searchParams);
+	for (const [key, value] of Object.entries(overrides)) {
+		if (
+			value === null ||
+			value === "" ||
+			(key === "page" && Number(value) === 1)
+		)
+			params.delete(key);
+		else params.set(key, String(value));
+	}
+	const query = params.toString();
+	return url(`/hotspots/github/${query ? `?${query}` : ""}`);
+}
+---
+
+<MainGridLayout title="GitHub Trending" description="基于 GitHub 官方公开数据，追踪热门仓库与 Star 历史增长。">
+	<section class="flex w-full rounded-(--radius-large) overflow-hidden relative">
+		<div class="card-base z-10 px-4 py-5 sm:px-6 md:px-9 md:py-8 relative w-full">
+			<header class="mb-7">
+				<div class="flex items-center gap-3 mb-3">
+					<div class="h-10 w-10 rounded-xl bg-(--primary) flex items-center justify-center text-white dark:text-black/70">
+						<Icon is:inline name="fa7-brands:github" class="text-2xl" />
+					</div>
+					<div>
+						<h1 class="text-3xl font-bold text-neutral-900 dark:text-neutral-100">GitHub Trending</h1>
+						<p class="mt-1 text-sm text-neutral-500 dark:text-neutral-400">增量榜基于本站每日跟踪候选池，不代表 GitHub 全量仓库。</p>
+					</div>
+				</div>
+			</header>
+
+			{runtime.status === "disabled" ? (
+				<div class="rounded-xl border border-dashed border-(--line-divider) px-5 py-12 text-center">
+					<Icon is:inline name="material-symbols:cloud-off-outline" class="text-4xl text-neutral-400" />
+					<h2 class="mt-3 font-semibold text-neutral-800 dark:text-neutral-200">当前部署环境未启用历史榜单</h2>
+					<p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">GitHub Trending 历史模块需要 Node 与 SQLite 持久化；RSS 热点仍可正常使用。</p>
+				</div>
+			) : runtime.status === "unavailable" || !pageData ? (
+				<div class="rounded-xl border border-dashed border-(--line-divider) px-5 py-12 text-center">
+					<Icon is:inline name="material-symbols:database-off-outline" class="text-4xl text-neutral-400" />
+					<h2 class="mt-3 font-semibold text-neutral-800 dark:text-neutral-200">趋势数据库暂时不可用</h2>
+					<p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">请稍后重试；页面不会向浏览器暴露数据库或上游错误详情。</p>
+				</div>
+			) : (
+				<>
+					{pageData.isStale && (
+						<div class="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="status">
+							最近一次采集失败，当前展示 {pageData.latestSuccessfulDate} 的缓存数据。
+						</div>
+					)}
+
+					<nav class="flex gap-2 overflow-x-auto pb-2" aria-label="榜单分类">
+						{GITHUB_TRENDING_CATEGORIES.map((category) => (
+							<a
+								href={buildPageUrl({ category, page: null })}
+								aria-current={pageData.query.category === category ? "page" : undefined}
+								class:list={[
+									"shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition",
+									pageData.query.category === category
+										? "bg-(--primary) text-white dark:text-black/70"
+										: "btn-regular",
+								]}
+							>
+								{CATEGORY_LABELS[category]}
+							</a>
+						))}
+					</nav>
+
+					<form method="get" action={url("/hotspots/github/")} class="mt-5 grid gap-3 md:grid-cols-[minmax(12rem,1fr)_minmax(9rem,auto)_minmax(9rem,auto)_auto_auto] items-end">
+						<input type="hidden" name="category" value={pageData.query.category} />
+						<label class="grid gap-1 text-sm text-neutral-600 dark:text-neutral-300">
+							<span>搜索</span>
+							<input name="search" value={pageData.query.search} maxlength="64" placeholder="仓库名、描述或 Topic" class="h-11 rounded-xl border border-(--line-divider) bg-(--card-bg) px-3 outline-none focus:border-(--primary)" />
+						</label>
+						<label class="grid gap-1 text-sm text-neutral-600 dark:text-neutral-300">
+							<span>语言</span>
+							<select name="language" class="h-11 rounded-xl border border-(--line-divider) bg-(--card-bg) px-3 outline-none focus:border-(--primary)">
+								<option value="">全部语言</option>
+								{pageData.availableLanguages.map((language) => <option value={language} selected={pageData.query.language === language}>{language}</option>)}
+							</select>
+						</label>
+						<label class="grid gap-1 text-sm text-neutral-600 dark:text-neutral-300">
+							<span>数据日期</span>
+							<select name="date" class="h-11 rounded-xl border border-(--line-divider) bg-(--card-bg) px-3 outline-none focus:border-(--primary)">
+								{pageData.availableDates.map((date) => <option value={date} selected={pageData.query.date === date}>{date}</option>)}
+							</select>
+						</label>
+						<label class="grid gap-1 text-sm text-neutral-600 dark:text-neutral-300">
+							<span>每页</span>
+							<select name="per_page" class="h-11 rounded-xl border border-(--line-divider) bg-(--card-bg) px-3 outline-none focus:border-(--primary)">
+								{[10, 20, 50, 100].map((size) => <option value={size} selected={pageData.query.perPage === size}>{size}</option>)}
+							</select>
+						</label>
+						<button type="submit" class="btn-regular h-11 px-4 rounded-xl font-semibold">筛选</button>
+					</form>
+
+					<div class="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-neutral-500 dark:text-neutral-400">
+						<span>数据日期：{pageData.query.date || "等待首次采集"}</span>
+						<span>共 {pageData.total} 个项目</span>
+					</div>
+
+					{pageData.status === "empty" ? (
+						<div class="mt-5 rounded-xl border border-dashed border-(--line-divider) px-5 py-14 text-center">
+							<Icon is:inline name="material-symbols:hourglass-top-rounded" class="text-4xl text-neutral-400" />
+							<h2 class="mt-3 font-semibold text-neutral-800 dark:text-neutral-200">等待首次数据采集</h2>
+							<p class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">首次成功后会立即显示 Star/Fork 总榜，增量榜将随历史逐步积累。</p>
+						</div>
+					) : pageData.items.length === 0 ? (
+						<div class="mt-5 rounded-xl border border-dashed border-(--line-divider) px-5 py-12 text-center text-sm text-neutral-500 dark:text-neutral-400">当前筛选条件没有匹配项目。</div>
+					) : (
+						<div class="mt-5 grid gap-3">
+							{pageData.items.map((item) => <RepositoryCard item={item} showDelta={isGrowthCategory} />)}
+						</div>
+					)}
+
+					{pageData.totalPages > 1 && (
+						<nav class="mt-7 flex flex-wrap justify-center items-center gap-2" aria-label="榜单分页">
+							{pageData.query.page > 1 ? (
+								<a href={buildPageUrl({ page: pageData.query.page - 1 })} class="btn-regular px-3 py-2 rounded-xl">上一页</a>
+							) : (
+								<span aria-disabled="true" class="btn-regular px-3 py-2 rounded-xl opacity-50">上一页</span>
+							)}
+							<span class="px-3 py-2 text-sm text-neutral-500 dark:text-neutral-400">{pageData.query.page} / {pageData.totalPages}</span>
+							{pageData.query.page < pageData.totalPages ? (
+								<a href={buildPageUrl({ page: pageData.query.page + 1 })} class="btn-regular px-3 py-2 rounded-xl">下一页</a>
+							) : (
+								<span aria-disabled="true" class="btn-regular px-3 py-2 rounded-xl opacity-50">下一页</span>
+							)}
+						</nav>
+					)}
+				</>
+			)}
+		</div>
+	</section>
+</MainGridLayout>

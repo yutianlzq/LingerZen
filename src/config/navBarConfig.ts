@@ -16,8 +16,13 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 主页
 	links.push(LinkPresets.Home);
 
-	// 热点
-	links.push(LinkPresets.Feeds);
+	// 热点及其子菜单
+	links.push({
+		name: "热点",
+		url: "#",
+		icon: "material-symbols:trending-up",
+		children: [LinkPresets.GitHubTrending, LinkPresets.RssFeeds],
+	});
 
 	// 文章及其子菜单
 	links.push({
@@ -104,10 +109,15 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:forum-rounded",
 		pageKey: "dynamic",
 	},
-	Feeds: {
-		name: "热点",
-		url: "/feeds/",
-		icon: "material-symbols:trending-up",
+	GitHubTrending: {
+		name: "GitHub Trending",
+		url: "/hotspots/github/",
+		icon: "fa7-brands:github",
+	},
+	RssFeeds: {
+		name: "RSS 订阅",
+		url: "/hotspots/rss/",
+		icon: "material-symbols:rss-feed-rounded",
 	},
 	Archive: {
 		name: "归档",

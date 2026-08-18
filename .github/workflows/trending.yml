@@ -1,0 +1,86 @@
+name: Collect GitHub Trending
+
+on:
+  schedule:
+    - cron: "17 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-trending-collection
+  cancel-in-progress: false
+
+env:
+  TENCENT_USER: ubuntu
+  DEPLOY_ROOT: /data/LingerZen
+
+jobs:
+  collect:
+    name: Collect daily repository snapshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TENCENT_HOST: ${{ secrets.TENCENT_HOST }}
+
+    steps:
+      - name: Configure SSH
+        env:
+          TENCENT_SSH_KEY: ${{ secrets.TENCENT_SSH_KEY }}
+          TENCENT_KNOWN_HOSTS: ${{ secrets.TENCENT_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$TENCENT_HOST"
+          test -n "$TENCENT_SSH_KEY"
+          test -n "$TENCENT_KNOWN_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$TENCENT_SSH_KEY" > ~/.ssh/tencent.pem
+          printf '%s\n' "$TENCENT_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/tencent.pem ~/.ssh/known_hosts
+
+      - name: Trigger collection inside production container
+        run: |
+          set -euo pipefail
+          ssh \
+            -i ~/.ssh/tencent.pem \
+            -p 22 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=3 \
+            "$TENCENT_USER@$TENCENT_HOST" \
+            "sudo -n bash -s -- '$DEPLOY_ROOT'" <<'REMOTE'
+          set -euo pipefail
+          DEPLOY_ROOT="$1"
+          CURRENT="$DEPLOY_ROOT/current"
+
+          test -L "$CURRENT"
+          test -d "$CURRENT"
+
+          docker compose \
+            --project-directory "$CURRENT" \
+            -p lingerzen \
+            exec -T firefly \
+            node --input-type=module -e '
+              const secret = process.env.GITHUB_TRENDING_COLLECTION_SECRET;
+              if (!secret) {
+                console.error("GitHub Trending collection is not configured");
+                process.exit(1);
+              }
+              const response = await fetch(
+                "http://127.0.0.1:4321/api/internal/github-trending/collect/",
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${secret}`,
+                    Origin: "http://127.0.0.1:4321",
+                  },
+                },
+              );
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                console.error(`GitHub Trending collection failed with status ${response.status}`);
+                process.exit(1);
+              }
+              console.log(JSON.stringify(result));
+            '
+          REMOTE
