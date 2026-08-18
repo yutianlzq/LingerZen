@@ -9,7 +9,8 @@ export const GET: APIRoute = async () => {
 		status: hasItems ? 200 : 502,
 		headers: {
 			"Content-Type": "application/json; charset=utf-8",
-			"Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=300",
+			"Cache-Control":
+				"public, max-age=60, s-maxage=300, stale-while-revalidate=300",
 		},
 	});
 };

@@ -86,7 +86,9 @@ function firstLink(value: unknown): string {
 function normalizeExternalLink(value: string): string {
 	try {
 		const link = new URL(value);
-		return link.protocol === "http:" || link.protocol === "https:" ? link.href : "";
+		return link.protocol === "http:" || link.protocol === "https:"
+			? link.href
+			: "";
 	} catch {
 		return "";
 	}
@@ -103,7 +105,8 @@ function normalizeItem(item: Record<string, unknown>): FeedItem | null {
 		description: stripMarkup(
 			asText(item.description) || asText(item.summary) || asText(item.content),
 		),
-		published: asText(item.pubDate) || asText(item.published) || asText(item.updated),
+		published:
+			asText(item.pubDate) || asText(item.published) || asText(item.updated),
 	};
 }
 
@@ -126,7 +129,10 @@ function parseFeed(xml: string): FeedItem[] {
 
 async function requestFeed(source: FeedSource): Promise<FeedItem[]> {
 	const sourceUrl = new URL(source.url);
-	if (sourceUrl.protocol !== "https:" || !ALLOWED_FEED_HOSTS.has(sourceUrl.hostname)) {
+	if (
+		sourceUrl.protocol !== "https:" ||
+		!ALLOWED_FEED_HOSTS.has(sourceUrl.hostname)
+	) {
 		throw new Error("feed source is not allowed");
 	}
 
@@ -135,7 +141,8 @@ async function requestFeed(source: FeedSource): Promise<FeedItem[]> {
 	try {
 		const response = await fetch(source.url, {
 			headers: {
-				Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml",
+				Accept:
+					"application/rss+xml, application/atom+xml, application/xml, text/xml",
 				"User-Agent": "yu-tian.net feed proxy",
 			},
 			signal: controller.signal,
@@ -144,7 +151,8 @@ async function requestFeed(source: FeedSource): Promise<FeedItem[]> {
 			throw new Error(`upstream returned ${response.status}`);
 		}
 		const items = parseFeed(await response.text());
-		if (items.length === 0) throw new Error("upstream feed contains no readable items");
+		if (items.length === 0)
+			throw new Error("upstream feed contains no readable items");
 		return items;
 	} finally {
 		clearTimeout(timeout);
@@ -184,7 +192,8 @@ export async function getFeed(source: FeedSource): Promise<FeedResult> {
 				items: previous.items,
 				fetchedAt: previous.fetchedAt.toISOString(),
 				stale: true,
-				error: error instanceof Error ? error.message : "upstream request failed",
+				error:
+					error instanceof Error ? error.message : "upstream request failed",
 			};
 		}
 		return {
